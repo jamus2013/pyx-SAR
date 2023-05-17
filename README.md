@@ -1,2 +1,2 @@
 # pyx-SAR
-UAS integration into CalTopo
+Pixhawk UAS integration into CalTopo
