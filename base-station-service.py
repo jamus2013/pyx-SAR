@@ -2,8 +2,8 @@ def main():
     import time
     baud                = 57600
     refresh_rate        = 2                 # Position update period [s]
-    key                 = "hcru1234"        # Caltopo connect key
-    device_id           = "HCRU-TEST1"      # Caltopo device ID
+    key                 = "xxxxxxxx"        # Caltopo connect key
+    device_id           = "xxxx-xxxx"      # Caltopo device ID
 
     link = connectUAS(baud)  # Open telemetry link
     while True:
