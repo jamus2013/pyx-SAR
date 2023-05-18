@@ -1,26 +1,31 @@
 def main():
     import time
+    baud                = 57600
+    refresh_rate        = 2                 # Position update period [s]
+    key                 = "hcru1234"        # Caltopo connect key
+    device_id           = "HCRU-TEST1"      # Caltopo device ID
 
-    refresh_rate    = 2                         # Position update period [s]
-    link            = connectUAS(8, 57600)
-    key             = "hcru1234"                # Caltopo connect key
-    device_id       = "HCRU-TEST1"              # Caltopo device ID
-
+    link = connectUAS(baud)  # Open telemetry link
     while True:
-        lat, lon = getUASPosition(link)         # Get global position
-        # print('Latitude = %f \t\t Longitude = %f' % (lat, lon))   # Uncomment for position debug
-        publishLocation(device_id, lat, lon, key)  # Upload position updates to Caltopo
-        time.sleep(refresh_rate)
+        if link is not None :
+            lat, lon = getUASPosition(link)         # Get global position
+            # print('Latitude = %f \t\t Longitude = %f' % (lat, lon))   # Uncomment for position debug
+            publishLocation(device_id, lat, lon, key)  # Upload position updates to Caltopo
+            time.sleep(refresh_rate)    # Delay to stagger CalTopo upload
+        else:
+            break
 
 
-def connectUAS(port_number, baudrate):
+def connectUAS(baudrate):
     # INITIALIZE SERIAL CONNECTION FROM GCS TO PIXHAWK
     from pymavlink import mavutil
-    master = mavutil.mavlink_connection("com%d" % port_number, baud=baudrate)
-    # NOTE: Might have to change tty* syntax if using GPIO
-    master.wait_heartbeat()  # Confirm connection
-    print('Connection successful')
-    return master
+    port = detectPort("usb")    # [Hook for future UDP connection]
+    if port is not None:
+        master = mavutil.mavlink_connection(port, baud=baudrate)
+        print('Waiting for connection...')
+        master.wait_heartbeat()  # Confirm connection
+        print('Connection successful!')
+        return master
 
 
 def getUASPosition(master):
@@ -45,15 +50,39 @@ def getUASPosition(master):
 
 
 def publishLocation(device_id, lat, lon, connect_key):
-	# STREAM POSITION TO CALTOPO API
-	import requests
-	endpoint = "https://caltopo.com/api/v1/position/report/%s?id=%s&lat=%f&lng=%f" % (connect_key, device_id, lat, lon)
-	#print(endpoint)
-	r = requests.get(url=endpoint)
-	if r.status_code == 200:
-		print("Updated location to \t %fN, \t%fE" % (lat, lon))
-	else:
-		print("Upload failed, error code %d" % r.status_code)
+    # STREAM POSITION TO CALTOPO API
+    import requests
+    endpoint = "https://caltopo.com/api/v1/position/report/%s?id=%s&lat=%f&lng=%f" % (connect_key, device_id, lat, lon)
+    #print(endpoint)
+    r = requests.get(url=endpoint)
+    if r.status_code == 200:
+        print("Updated location to \t %fN, \t%fE" % (lat, lon))
+    else:
+        print("Upload failed, error code %d" % r.status_code)
+
+
+def detectPort(type):
+    # IDENTIFY TELEMETRY LINK'S PORT
+    print("Detecting port...")
+    if type == 'usb':
+        import serial.tools.list_ports
+        ports = serial.tools.list_ports.comports()
+        for port in ports:
+            if "USB" in port.description:       # Telemetry modem
+                com_port = port.device
+                break
+            elif "CUBE" in port.description:    # MicroUSB
+                com_port = port.device
+                break
+            else:
+                com_port = None
+    if com_port is not None:
+        print("Port found!")
+        return com_port
+    else:
+        print("No device detected: Check USB connection")
+        return None
+
 
 if __name__ == '__main__':
     main()
