@@ -1,9 +1,11 @@
 def main():
     import time
+    import getpass
     baud                = 57600
     refresh_rate        = 2                 # Position update period [s]
-    key                 = "xxxxxxxx"        # Caltopo connect key
-    device_id           = "xxxx-xxxx"      # Caltopo device ID
+
+    device_id   = input("Enter CalTopo Device ID: ")  # User inputs CalTopo trackable device name
+    key         = getpass.getpass("Enter CalTopo Connect Key: ")    # User inputs CalTopo access URL connect key
 
     link = connectUAS(baud)  # Open telemetry link
     while True:
