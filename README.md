@@ -6,8 +6,8 @@ Features Python scripts to broadcast MAVLink locations to CalTopo API endpoint
 INSTRUCTIONS
 1. Clone repo (or just download base-station-service)
 2. Install Python and dependencies (will eventually be packaged)
-3. Populate "key" variable with your CalTopo URL key 
-4. Populate "device_id" variable with your CalTopo device ID
+3. Enter your CalTopo device ID
+4. Enter your CalTopo URL key 
 5. Create CalTopo map and enable Realtime Data > Shared Locations > [All] or [your team]
 6. Connect GCS to your CalTopo network (local or internet)
 7. Connect aircraft to GCS using wireless modem
