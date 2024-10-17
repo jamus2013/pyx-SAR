@@ -7,7 +7,7 @@ def get_geofence_points(plan_data):
     if "geoFence" in plan_data and "polygons" in plan_data["geoFence"]:
         # Parse polygon points
         for polygon in plan_data["geoFence"]["polygons"]:
-            geofence_vertices.append(polygon["polygon"])
+            geofence_vertices.extend([[point[1], point[0]] for point in polygon["polygon"]])
     return geofence_vertices
 
 # Extract mission waypoints from mission file
@@ -23,7 +23,7 @@ def get_waypoints(plan_data):
                     lat = item["params"][4]
                     lon = item["params"][5]
                     alt = item["params"][6]
-                    waypoints.append((lat, lon))    # Add in alt if it were available
+                    waypoints.append([lon,lat])    # Add in alt if it were available
     return waypoints
 
 # Extract rally points from mission file
@@ -58,5 +58,5 @@ def main(plan_file):
     print(rally_points)
 
 if __name__ == "__main__":
-    plan_file = '../example-data/maple-hill.plan'
+    plan_file = '../example-data/maple-hill.plan'   # Replace with import tool!
     main(plan_file)

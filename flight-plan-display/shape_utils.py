@@ -1,10 +1,28 @@
-def generateJSONPolygon(shape_title, shape_type, vertices, stroke_color_rgb, stroke_width, stroke_opacity, fill_opacity):
-    fill_color_rgb = stroke_color_rgb   # Remove to enable separate edge and fill colors
+def generateJSONfeature(shape_title, shape_type, vertices, color_rgb, stroke_width, stroke_opacity, fill_opacity, owner):
 
-    json_string = (f'{{"features":[{{"geometry":{{"coordinates":[{vertices}],"type":"{shape_type}"}},'
-                   f'"id":"6953b20e-aca0-4739-8fab-e9f8f6051dd9","type":"Feature","properties":{{"stroke-opacity":{stroke_opacity},'
-                   f'"creator":"PHL7MC","description":"","stroke-width":{stroke_width},"title":"{shape_title}",'
-                   f'"fill":"#{fill_color_rgb}","stroke":"#{stroke_color_rgb}","fill-opacity":{fill_opacity},'
-                   f'"class":"Shape","updated":1724165341574}}}}],"type":"FeatureCollection"}}')
+    import time
+    import uuid
+    unix_time = int(time.time())
+    random_id = str(uuid.uuid4())   # Workaround?
 
-    return json_string
+    # CalTopo GeoJSON format (feature only)
+    if shape_type == 'Polygon':
+        feature_string = (
+            f'{{"geometry":{{"coordinates":[{vertices}],"type":"{shape_type}"}},'
+            f'"id":"{random_id}","type":"Feature",'
+            f'"properties":{{"stroke-opacity":{stroke_opacity},"creator":"{owner}",'
+            f'"description":"","stroke-width":{stroke_width},"title":"{shape_title}",'
+            f'"fill":"#{color_rgb}","stroke":"#{color_rgb}","fill-opacity":{fill_opacity},'
+            f'"class":"Shape","updated":{unix_time}}}}}'
+        )
+    elif shape_type == 'LineString':
+        feature_string = (
+            f'{{"geometry":{{"coordinates":{vertices},"type":"{shape_type}"}},'
+            f'"id":"{random_id}","type":"Feature",'
+            f'"properties":{{"stroke-opacity":{stroke_opacity},"creator":"{owner}","pattern":"solid",'
+            f'"description":"","stroke-width":{stroke_width},"title":"{shape_title}",'
+            f'"fill":"#{color_rgb}","stroke":"#{color_rgb}",'
+            f'"class":"Shape","updated":{unix_time}}}}}'
+        )
+
+    return feature_string
