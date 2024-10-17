@@ -5,6 +5,7 @@ def get_geofence_points(plan_data):
     geofence_vertices = []
     # Detect presence of polygon geofence(s)
     if "geoFence" in plan_data and "polygons" in plan_data["geoFence"]:
+        print('Detecting geofence...')
         # Parse polygon points
         for polygon in plan_data["geoFence"]["polygons"]:
             geofence_vertices.extend([[point[1], point[0]] for point in polygon["polygon"]])
@@ -15,6 +16,7 @@ def get_waypoints(plan_data):
     waypoints = []
     # Detect presence of valid waypoints
     if "mission" in plan_data and "items" in plan_data["mission"]:
+        print('Detecting waypoints...')
         for item in plan_data["mission"]["items"]:
             # Filter to only get takeoff, landing, waypoint, or RTL points
             if "command" in item and item["command"] in [16, 21, 22, 30]:
@@ -31,6 +33,7 @@ def get_rally_points(plan_data):
     rally_points = []
     # Detect valid rally point(s) and parse points
     if "rallyPoints" in plan_data and "points" in plan_data["rallyPoints"]:
+        print('Detecting rally point(s)...')
         for point in plan_data["rallyPoints"]["points"]:
             lat = point[0]
             lon = point[1]

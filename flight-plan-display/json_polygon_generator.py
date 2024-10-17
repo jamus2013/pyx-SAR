@@ -4,11 +4,13 @@ from qgc_plan_parser import get_waypoints
 import json
 
 # Read in QGC mission file
-plan_file = '../example-data/maple-hill.plan'
+plan_file = 'maple_hill.plan'
+print('Importing QGC mission file...')
 with open(plan_file, 'r') as f:
     plan_data = json.load(f)
 
 # Extract geofence
+print('Parsing mission file...')
 geofence_vertices = get_geofence_points(plan_data)
 mission_points = get_waypoints(plan_data)
 
@@ -23,7 +25,7 @@ json_string = (
 )
 
 # print(json_string)
-print('Writing shape file..')
+print('Writing CalTopo shape file..')
 data = json.loads(json_string)
 with open('uas_flight_plan.json', 'w') as json_file:
     json.dump(data, json_file)
