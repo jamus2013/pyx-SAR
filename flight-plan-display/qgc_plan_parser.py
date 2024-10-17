@@ -5,9 +5,10 @@ def get_geofence_points(plan_data):
     geofence_vertices = []
     # Detect presence of polygon geofence(s)
     if "geoFence" in plan_data and "polygons" in plan_data["geoFence"]:
+        print('Detecting geofence...')
         # Parse polygon points
         for polygon in plan_data["geoFence"]["polygons"]:
-            geofence_vertices.append(polygon["polygon"])
+            geofence_vertices.extend([[point[1], point[0]] for point in polygon["polygon"]])
     return geofence_vertices
 
 # Extract mission waypoints from mission file
@@ -15,6 +16,7 @@ def get_waypoints(plan_data):
     waypoints = []
     # Detect presence of valid waypoints
     if "mission" in plan_data and "items" in plan_data["mission"]:
+        print('Detecting waypoints...')
         for item in plan_data["mission"]["items"]:
             # Filter to only get takeoff, landing, waypoint, or RTL points
             if "command" in item and item["command"] in [16, 21, 22, 30]:
@@ -23,7 +25,7 @@ def get_waypoints(plan_data):
                     lat = item["params"][4]
                     lon = item["params"][5]
                     alt = item["params"][6]
-                    waypoints.append((lat, lon))    # Add in alt if it were available
+                    waypoints.append([lon,lat])    # Add in alt if it were available
     return waypoints
 
 # Extract rally points from mission file
@@ -31,6 +33,7 @@ def get_rally_points(plan_data):
     rally_points = []
     # Detect valid rally point(s) and parse points
     if "rallyPoints" in plan_data and "points" in plan_data["rallyPoints"]:
+        print('Detecting rally point(s)...')
         for point in plan_data["rallyPoints"]["points"]:
             lat = point[0]
             lon = point[1]
@@ -58,5 +61,5 @@ def main(plan_file):
     print(rally_points)
 
 if __name__ == "__main__":
-    plan_file = '../example-data/maple-hill.plan'
+    plan_file = '../example-data/maple-hill.plan'   # Replace with import tool!
     main(plan_file)
