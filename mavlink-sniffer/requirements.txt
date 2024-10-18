@@ -1,2 +1,3 @@
 pymavlink==2.4.38
 pyserial==3.5
+mavproxy==1.8.71
