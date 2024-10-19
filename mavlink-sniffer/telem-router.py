@@ -1,16 +1,18 @@
 #import subprocess
 #import re
 
-def start_mavproxy(baud,udp_ip_address,udp_port):
-    import subprocess
-    command = (f'mavproxy.py --master={get_port_number()} --baudrate {baud} --out {udp_ip_address}:{udp_port}')
-  
-    print(command)
+ip_address = '127.0.0.1'
+port_1 = 14450
+port_2 = 14451
 
+def start_mavproxy(baud,udp_ip_address,udp_port_1,udp_port_2):
+    # Start running MAVProxy MAVLink router (UDP)
+    import subprocess
+    command = (f'mavproxy.py --master={get_port_number()} --baudrate {baud} --out {udp_ip_address}:{udp_port_1} --out {udp_ip_address}:{udp_port_2}')
     try:
         subprocess.run(command, shell=True, check=True)
     except subprocess.CalledProcessError as e:
-        print(f'Command failed with error:{e}')
+        print(f'Command failed with error: {e}')
 
 
 def get_port_number():
@@ -38,7 +40,25 @@ def get_port_number():
         print(f"Error running dmesg: {e}")
         return None
 
+def get_gps_data(udp_ip_address, udp_port):
+    # Extract state estimates from MAVLink stream in parallel to GCS instance
+    import socket
+    import time
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((udp_ip_address, udp_port))
+    while True:
+        try:
+            data, addr = sock.recvfrom(1024)
+            printf(f'Received data from {addr}: {data}')
+        except KeyboardInterrupt:
+            print('Terminated by user')
+            break
+        except Exception as e:
+            print(f'Error: {e}')
+        time.sleep(1)
+
 
 if __name__ == '__main__':
-    start_mavproxy(57600, '127.0.0.1',14550)
+    start_mavproxy(57600, ip_address,port_1,port_2)
+    #get_gps_data(ip_address, port_1)
    
