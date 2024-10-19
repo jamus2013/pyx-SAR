@@ -2,13 +2,14 @@
 #import re
 
 ip_address = '127.0.0.1'
-port_1 = 14450
-port_2 = 14451
+port_1 = 14550
+port_2 = 14551
 
 def start_mavproxy(baud,udp_ip_address,udp_port_1,udp_port_2):
     # Start running MAVProxy MAVLink router (UDP)
     import subprocess
     command = (f'mavproxy.py --master={get_port_number()} --baudrate {baud} --out {udp_ip_address}:{udp_port_1} --out {udp_ip_address}:{udp_port_2}')
+    print(command)
     try:
         subprocess.run(command, shell=True, check=True)
     except subprocess.CalledProcessError as e:

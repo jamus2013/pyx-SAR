@@ -27,5 +27,5 @@ def get_gps_data(connection):
 
 
 if __name__ == '__main__':
-    mavproxy_connection = connect_to_mavproxy('127.0.0.1', 14450)
+    mavproxy_connection = connect_to_mavproxy('127.0.0.1', 14551)
     get_gps_data(mavproxy_connection)
