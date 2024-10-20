@@ -1,11 +1,12 @@
+import time
+import getpass
+
+
 def main():
-    import time
-    import getpass
-    baud                = 57600
     refresh_rate        = 2                 # Position update period [s]
-    logging_enabled     = True
+    logging_enabled     = False
     
-    device_id   = input("Enter CalTopo Device ID: ")  # User inputs CalTopo trackable device name
+    device_id   = input("Enter CalTopo device ID: ")  # User inputs CalTopo trackable device name
     key         = getpass.getpass("Enter CalTopo Connect Key: ")    # User inputs CalTopo access URL connect key
 
     link = connectUAS(baud)  # Open telemetry link
@@ -23,80 +24,7 @@ def main():
             break
 
 
-def connectUAS(baudrate):
-    # INITIALIZE SERIAL CONNECTION FROM GCS TO PIXHAWK
-    from pymavlink import mavutil
-    port = detectPort("usb")    # [Hook for future UDP connection]
-    if port is not None:
-        master = mavutil.mavlink_connection(port, baud=baudrate)
-        print('Waiting for connection...')
-        master.wait_heartbeat()  # Confirm connection
-        print('Connection successful!')
-        return master
 
-
-def getUASPosition(master):
-    # GET GEOSPATIAL DATA FROM PIXHAWK
-    from pymavlink import mavutil
-    master.mav.request_data_stream_send(  # Initialize MAVLink stream
-        master.target_system,
-        master.target_component,
-        mavutil.mavlink.MAV_DATA_STREAM_ALL,
-        1, 1
-    )
-    while True:
-        msg = master.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=10)
-        if msg is not None:
-            break
-    lat         = msg.lat / 1e7         # Est. Latitude [deg N WGS-84]
-    lon         = msg.lon / 1e7         # Est. Longitude [deg E WGS-84]
-    alt_msl     = msg.alt               # Est. Altitude [m MSL]
-    alt_rel     = msg.relative_alt      # Est. Altitude relative to HOME [m AGL]
-    time_local  = getSystemTime()       # Local system time [Y-M-D hh:mm:ss]
-    return lat, lon, time_local
-
-
-def publishLocation(device_id, lat, lon, connect_key):
-    # STREAM POSITION TO CALTOPO API
-    import requests
-    endpoint = "https://caltopo.com/api/v1/position/report/%s?id=%s&lat=%f&lng=%f" % (connect_key, device_id, lat, lon)
-    #print(endpoint)
-    r = requests.get(url=endpoint)
-    if r.status_code == 200:
-        print("Updated location to \t %fN, \t%fE" % (lat, lon))
-    else:
-        print("Upload failed, error code %d" % r.status_code)
-    return r.status_code
-
-
-def detectPort(type):
-    # IDENTIFY TELEMETRY LINK'S PORT
-    print("Detecting port...")
-    if type == 'usb':
-        import serial.tools.list_ports
-        ports = serial.tools.list_ports.comports()
-        for port in ports:
-            if "USB" in port.description:       # Telemetry modem
-                com_port = port.device
-                break
-            elif "CUBE" in port.description:    # MicroUSB
-                com_port = port.device
-                break
-            else:
-                com_port = None
-    if com_port is not None:
-        print("Port (" + port.device + ") found!")
-        return com_port
-    else:
-        print("No device detected: Check USB connection")
-        return None
-
-
-def getSystemTime():
-    # CREATE TIME STAMP BASED ON LOCAL SYSTEM TIME
-    import datetime
-    sys_time = datetime.datetime.now()
-    return sys_time.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def logDataStream(log_path, t, lat, lon, status):
