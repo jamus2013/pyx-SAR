@@ -6,7 +6,7 @@ import getpass
 device_id = input("Enter CalTopo device ID: ")  # User inputs CalTopo trackable device name
 key = getpass.getpass("Enter CalTopo Connect Key: ")    # User inputs CalTopo access URL connect key
 logging_enabled = False
-refresh_rate = 0.5    # Broadcast period [s] for CalTopo position updates
+refresh_rate = 1    # Broadcast period [s] for CalTopo position updates
 udp_address = '127.0.0.1'   # IP address for UDP
 udp_port = 14551    # UDP port for pyx-SAR; NOTE GCS will need a separate port number
 

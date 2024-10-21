@@ -1,4 +1,7 @@
 import json
+plan_file = '/home/jaimemoon/Documents/pyx-SAR/example-data/maple-hill.plan'   # Replace with import tool!
+
+
 
 # Extract geofence vertices from mission file
 def get_geofence_points(plan_data):
@@ -50,16 +53,16 @@ def main(plan_file):
     # Parse plan file
     geofence_vertices = get_geofence_points(plan_data)
     waypoints = get_waypoints(plan_data)
-    rally_points = get_rally_points(plan_data)
+    #rally_points = get_rally_points(plan_data)
 
     # Preview results
     print("\nGeofence vertices:")
     print(geofence_vertices)
     print("\nWaypoints:")
     print(waypoints)
-    print("\nRally points:")
-    print(rally_points)
+    #print("\nRally points:")
+    #print(rally_points)
 
 if __name__ == "__main__":
-    plan_file = '../example-data/maple-hill.plan'   # Replace with import tool!
+    #plan_file = '../example-data/maple-hill.plan'   # Replace with import tool!
     main(plan_file)

@@ -4,7 +4,7 @@ from qgc_plan_parser import get_waypoints
 import json
 
 # Read in QGC mission file
-plan_file = 'maple_hill.plan'
+plan_file = '/home/jaimemoon/Documents/pyx-SAR/example-data/john-hunt.plan'
 print('Importing QGC mission file...')
 with open(plan_file, 'r') as f:
     plan_data = json.load(f)
