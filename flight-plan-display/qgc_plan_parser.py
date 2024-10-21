@@ -1,7 +1,21 @@
 import json
-plan_file = '/home/jaimemoon/Documents/pyx-SAR/example-data/maple-hill.plan'   # Replace with import tool!
+from PyQt5.QtWidgets import QApplication, QFileDialog
+from shape_utils import generateJSONfeature
+import os
 
+# Import *.plan file and extract data
+def import_plan_file():
+    app = QApplication([])
+    plan_file_path, _ = QFileDialog.getOpenFileName(None, "Select QGC mission file")
 
+    # Read QGC *.plan file
+    if not plan_file_path:
+        print("No file selected")
+    else:
+        print("Parsing mission file...")
+        with open(plan_file_path, 'r') as f:
+            plan_data = json.load(f)
+        return plan_file_path, plan_data
 
 # Extract geofence vertices from mission file
 def get_geofence_points(plan_data):
@@ -44,25 +58,43 @@ def get_rally_points(plan_data):
         rally_points.append((lat,lon))  # Add in alt if it were supported
     return rally_points
 
-def main(plan_file):
-    # Read QGC *.plan file
-    print("Parsing mission file...")
-    with open(plan_file, 'r') as f:
-        plan_data = json.load(f)
+def generate_geoJSON(src, fence_points, waypoints, rally_points):
+    # Put together main shape string for JSON
+    if fence_points:
+        geofence_string = generateJSONfeature('UAS Geofence','Polygon',fence_points,'OOOOFF',1,1,0.1,'KQ4VFH')
+    if waypoints:
+        waypoints_string = generateJSONfeature('UAS Flightpath','LineString',waypoints,'OOFF00',1,1,0.1,'KQ4VFH')
+    if rally_points:
+        print("Rally points not yet supported")
+    json_string = (
+        f'{{"features":['
+        f'{geofence_string},'
+        f'{waypoints_string}'
+        f'],"type":"FeatureCollection"}}'
+    )
 
-    # Parse plan file
-    geofence_vertices = get_geofence_points(plan_data)
-    waypoints = get_waypoints(plan_data)
-    #rally_points = get_rally_points(plan_data)
+    # Default to writing geoJSON in same location as source *.plan
+    destination = os.path.dirname(src)
+    output_filename = os.path.basename(src) # Match geoJSON filename with original *.plan filename
+    output_filename, _ = os.path.splitext(output_filename)
 
-    # Preview results
-    print("\nGeofence vertices:")
-    print(geofence_vertices)
-    print("\nWaypoints:")
-    print(waypoints)
-    #print("\nRally points:")
-    #print(rally_points)
+    # Export geoJSON
+    print('Writing CalTopo shape file..')
+    data = json.loads(json_string)
+    with open(f'{destination}/{output_filename}.json', 'w') as json_file:
+        json.dump(data, json_file)
+    print('Shape file saved')
+
+def main():
+    plan_file_path, plan_data = import_plan_file()
+    if plan_data:
+        # Parse plan file
+        geofence_vertices = get_geofence_points(plan_data)
+        waypoints = get_waypoints(plan_data)
+        #rally_points = get_rally_points(plan_data)
+
+        generate_geoJSON(plan_file_path, geofence_vertices, waypoints, None)
 
 if __name__ == "__main__":
     #plan_file = '../example-data/maple-hill.plan'   # Replace with import tool!
-    main(plan_file)
+    main()
