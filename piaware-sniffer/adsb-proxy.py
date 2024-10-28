@@ -1,8 +1,11 @@
 import socket
 
-def is_valid_lat_lon(lat, lon):
-    """Check if latitude and longitude are valid."""
-    return -90 <= lat <= 90 and -180 <= lon <= 180
+accumulate_tracks = True
+max_alt = 10000 # ft MSL Altitude filter
+
+if accumulate_tracks:
+    aircraft_database = {}
+
 
 def parse_adsb_message(message):
     """Parse the ADS-B message and return relevant fields."""
@@ -25,21 +28,23 @@ def parse_adsb_message(message):
     lat_str = fields[14]    # Latitude (string)
     lon_str = fields[15]    # Longitude (string)
     alt_str = fields[11]    # Altitude (string)
-    if lat_str and lon_str:
-        print("debug")
+    if lat_str and lon_str and alt_str:
         try:
             latitude = float(lat_str)
             longitude = float(lon_str)
-            if alt_str:
-                altitude = float(alt_str)
+            altitude = float(alt_str)
+            if altitude <= max_alt:
+                return (timestamp, id_number, (latitude, longitude, altitude))
             else:
-                altitude = None
-            return (timestamp, id_number, (latitude, longitude, altitude))
+                return None
         except ValueError:
             return None
     return None
 
-
+def store_adsb_data(id_number, timestamp, lla):
+    if id_number not in aircraft_database:
+        aircraft_database[id_number] = []
+    aircraft_database[id_number].append((timestamp, lla))
 
 def main():
     # Connect to the dump1090 server
@@ -52,6 +57,7 @@ def main():
                 if parsed:
                     timestamp, id_number, lla = parsed
                     print(f"Date/Time: {timestamp}, ID: {id_number}, LLA: {lla}")
-
+                    if accumulate_tracks:
+                        store_adsb_data(timestamp, id_number, lla)
 if __name__ == "__main__":
     main()
