@@ -1,10 +1,15 @@
 import socket
 
 accumulate_tracks = False   # Enable to store tracks in a dictionary
+broadcast_tracks = True    # Enable to stream ADS-B tracks to CalTopo
 max_alt = 90000 # ft MSL Altitude filter
+
 if accumulate_tracks:
     aircraft_database = {}  # Initialize dictionary to store tracks
-
+if broadcast_tracks:
+    from caltopo_utils import publish_location
+    import getpass
+    key = getpass.getpass("Enter CalTopo Connect Key: ")    # User inputs CalTopo access URL connect key
 
 def main():
     adsb_socket = connect_to_piaware("192.168.1.115", 30003, 10)    # Connect to PiAware over LAN
@@ -52,9 +57,9 @@ def parse_adsb_data(sock):
                 timestamp = f"{fields[6]} {fields[7]}" # Extract date and time
                 id_number = fields[4]  # Extract ID (hex code)
                 lla = (latitude, longitude, altitude)
-                print(f"MSG Received: Date/Time: {timestamp}, ID: {id_number}, LLA: {lla}")   # Uncomment for debug
-                #publish_location(id_number, lla[0], lla[1], key)
-        
+                #print(f"MSG Received: Date/Time: {timestamp}, ID: {id_number}, LLA: {lla}")   # Uncomment for debug
+                if broadcast_tracks:
+                    publish_location(id_number, lla[0], lla[1], key, timestamp)
                 if accumulate_tracks:
                     store_adsb_data(timestamp, id_number, lla)
 
