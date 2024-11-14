@@ -2,10 +2,9 @@ import subprocess
 import re
 
 ip_address = '127.0.0.1'    # IP address for MAVLink router
-port_1 = 14550  # Ports for GCS or pyx-SAR
-port_2 = 14551
-port_3 = 14552
-
+port_1 = 14550  # QGC port
+port_2 = 14551  # gps_relay port
+port_3 = 14552  # piaware port?
 
 def start_mavproxy(baud,udp_ip_address,udp_port_1,udp_port_2,udp_port_3):
     # Start running MAVProxy MAVLink router (UDP)
