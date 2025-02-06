@@ -5,7 +5,7 @@ broadcast_tracks = False    # Enable to stream ADS-B tracks to CalTopo
 max_alt = 90000 # ft MSL Altitude filter
 max_radius = 30 # km maximum radius around home_point to observe
 home_point = (34.7308, -86.5994) # Reference point for air traffic center
-pi_address = "192.168.1.231"    # IP address of PiAware RPi
+pi_address = "192.168.177.168"    # IP address of PiAware RPi
 
 if accumulate_tracks:
     aircraft_database = {}  # Initialize dictionary to store tracks
@@ -37,6 +37,7 @@ def parse_adsb_data(sock):
     # Decode ADS-B tracks into desired data
     raw_data = sock.recv(4096).decode("utf-8").strip().split("\n")  # Decode incoming tracks
     for message in raw_data:    # Each individual message
+        print(message)
         fields = message.split(',')
         if len(fields) < 16:
             return None  # Not enough fields
@@ -45,6 +46,15 @@ def parse_adsb_data(sock):
         msg_type = fields[0]
         if msg_type != "MSG":
             return None  # Only process MSG types
+
+        icao = fields[4]    # ICAO nubmer [hex]
+        gnd_spd = fields[12]    # Ground speed [kts]
+        climb_rate = fields[16] # Vertical rate [ft/min]
+        gen_date = fields[6]
+        gen_time = fields[7]
+        log_date = 
+        log_time = 
+
 
         # Extract LLA if present        
         lat_str = fields[14]    # Latitude (string)
@@ -57,7 +67,7 @@ def parse_adsb_data(sock):
             latitude = float(lat_str)   
             longitude = float(lon_str)
             altitude = float(alt_str)
-            timestamp = f"{fields[6]} {fields[7]}" # Extract date and time
+            timestamp = f"{gen_date} {gen_time}" # Extract date and time
             id_number = fields[4]  # Extract ID (hex code)
             lla = (latitude, longitude, altitude)
             
