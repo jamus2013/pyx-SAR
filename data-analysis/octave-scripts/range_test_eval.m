@@ -1,15 +1,28 @@
+%% mLRS RADIO RANGE TEST POST-PROCESSOR
+% Parses ArduPlane FCU logs and exports RF signal metrics
+% Instructions:
+%   1. Run radio test
+%   2. Download DataFlash Log (*.bin) using GCS software (or pull from FCU MicroSD card)
+%   3. Generate *.mat file from *.bin using Mission Planner
+%   4. Update timezone ("utc_offset")
+%   5. Insert LLA of stationary GCS
+%   6. Set export flag to 1 if ready to generate output *csv's
+%   7. Run this script and import *.mat file
+
 %fcu_log_path      = "2025-02-05 16-33-27.bin-969641.mat"; % FCU log filepath [*.mat] COMPILE from *.bin using Mision Planner
 [f, p]            = uigetfile('*.mat', 'Select FCU log MAT file');
 utc_offset        = -6;  % Timezone offset from UTC to local (-6=CST)
-gcs_location      = [34.72714, -86.55389, 247]; % LLA of GCS location
+gcs_location      = [34.72714, -86.55389, 247]; % LLA of GCS location (Altitude = m HAE)
+export_true       = 1;  % Set to 1 to export CSV files
 
-fcu_gps_output_filename   = "fcu_gps_data.csv";  %CSV Export filenames
-fcu_tm_output_filename    = "fcu_tm_metrics.csv";
-fcu_rc_output_filename    = "fcu_rc_metrics.csv";
+fcu_gps_output_filename   = [p "fcu_gps_data.csv"];  %CSV Export filenames
+fcu_tm_output_filename    = [p "fcu_tm_metrics.csv"];
+fcu_rc_output_filename    = [p "fcu_rc_metrics.csv"];
 
 disp("Importing FCU log");  % Import FCU log
 fcu_log_path = [p f]
-load(fcu_log_path); clc;
+load(fcu_log_path);
+disp("Parsing log data...");
 
 % Parse FCU GPS log data
 gps_ms            = GPS_1(:,5);   % Get GPS clock milliseconds
@@ -30,11 +43,11 @@ end
 log_start_time    = gps2local(gps_wk(1), gps_ms(1), utc_offset, 0); % Local time stamp for log start
 dt_boot_log       = GPS_1(1,2)/10e6; % Time between power up and log start [s]
 powerup_time      = gps2local(gps_wk(1), gps_ms(1), utc_offset, -dt_boot_log);
-fprintf("Power up time: %s\n", powerup_time); 
+fprintf("Power up time: %s\n", powerup_time);
 fprintf("FCU Log start time: %s\n", log_start_time);
 
 % Parse FCU telemetry metrics
-tm_dt             = RAD(:,2)/10e6;  % Get delta t from power up [s]   
+tm_dt             = RAD(:,2)/10e6;  % Get delta t from power up [s]
 tm_rssi_local     = RAD(:,3);  % Get local TM radio RSSI
 tm_rssi_remote    = RAD(:,4);  % Get remote TM radio RSSI
 tm_noise_local    = RAD(:,6);  % Get local TM noise floor
@@ -46,42 +59,49 @@ rc_dt             = RSSI(:,2)/10e6; % Get delta t from power up [s]
 rc_rssi           = RSSI(:,3);    % Get C2 link RSSI
 rc_lq             = RSSI(:,4);    % Get C2 link quality
 
-% Write FCU GPS data
-disp("Exporting parsed FCU GPS data...");
-headers   = {"GPS Time [CST]", "Latitude [deg N]", "Longitude [deg E]", "Range [km]"};
-fid       = fopen(fcu_gps_output_filename, "w");
-fprintf(fid, "%s,%s,%s,%s\n", headers{:});
-for i = 1:length(gps_time)
-  fprintf(fid, "%s,%.8f,%.8f,%.8f\n", ...
-  gps_time(i,:), gps_lat(i), gps_lon(i), range(i));
-end
-fclose(fid);
-disp("Export complete");
+% DEBUG
+fprintf("GPS data length = %d\n", length(gps_time))
+fprintf("Telem data length = %d\n", length(tm_dt))
+fprintf("RC data length = %d\n", length(rc_dt))
 
-% Write FCU TM data
-disp("Exporting parsed FCU TM RF data...");
-headers   = {"TM Time [s]","TM RSSI Local","TM RSSI Remote","TM Noise Local",...
-            "TM Noise Remote","TM RX Errors"};
-fid       = fopen(fcu_tm_output_filename, "w");
-fprintf(fid, "%s,%s,%s,%s,%s,%s\n", headers{:});
-for i = 1:length(tm_dt)
-  fprintf(fid, "%.8f,%.1f,%.1f,%.1f,%.1f,%d\n", ...
-  tm_dt(i), tm_rssi_local(i), tm_rssi_remote(i), tm_noise_local(i), ...
-  tm_noise_remote(i), tm_rx_err(i));
-end
-fclose(fid);
-disp("Export complete");
+%% EXPORT DATA
+if export_true == 1
+  disp("Exporting parsed FCU GPS data...");
+  % Write FCU GPS data
+  headers   = {"GPS Time [CST]", "Latitude [deg N]", "Longitude [deg E]", "Range [km]"};
+  fid       = fopen(fcu_gps_output_filename, "w");
+  fprintf(fid, "%s,%s,%s,%s\n", headers{:});
+  for i = 1:length(gps_time)
+    fprintf(fid, "%s,%.8f,%.8f,%.8f\n", ...
+    gps_time(i,:), gps_lat(i), gps_lon(i), range(i));
+  end
+  fclose(fid);
+  disp("Export complete");
 
-% Write FCU RC data
-disp("Exporting parsed FCU RC RF data...");
-headers   = {"RC Time [s]", "RC RSSI", "RC LQ"};
-fid       = fopen(fcu_rc_output_filename, "w");
-fprintf(fid, "%s,%s,%s\n", headers{:});
-for i = 1:length(rc_dt)
-  fprintf(fid, "%.8f,%.6f,%.1f\n",rc_dt(i), rc_rssi(i), rc_lq(i));
-end
-fclose(fid);
-disp("Export complete");
+  % Write FCU TM data
+  disp("Exporting parsed FCU TM RF data...");
+  headers   = {"TM Time [s]","TM RSSI Local","TM RSSI Remote","TM Noise Local",...
+              "TM Noise Remote","TM RX Errors"};
+  fid       = fopen(fcu_tm_output_filename, "w");
+  fprintf(fid, "%s,%s,%s,%s,%s,%s\n", headers{:});
+  for i = 1:length(tm_dt)
+    fprintf(fid, "%.8f,%.1f,%.1f,%.1f,%.1f,%d\n", ...
+    tm_dt(i), tm_rssi_local(i), tm_rssi_remote(i), tm_noise_local(i), ...
+    tm_noise_remote(i), tm_rx_err(i));
+  end
+  fclose(fid);
+  disp("Export complete");
 
+  % Write FCU RC data
+  disp("Exporting parsed FCU RC RF data...");
+  headers   = {"RC Time [s]", "RC RSSI", "RC LQ"};
+  fid       = fopen(fcu_rc_output_filename, "w");
+  fprintf(fid, "%s,%s,%s\n", headers{:});
+  for i = 1:length(rc_dt)
+    fprintf(fid, "%.8f,%.6f,%.1f\n",rc_dt(i), rc_rssi(i), rc_lq(i));
+  end
+  fclose(fid);
+  disp("Export complete");
+end
 
 
