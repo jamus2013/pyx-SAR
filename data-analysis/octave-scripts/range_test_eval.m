@@ -9,22 +9,26 @@
 %   6. Set export flag to 1 if ready to generate output *csv's
 %   7. Run this script and import *.mat file
 
+% User variables
 %fcu_log_path      = "2025-02-05 16-33-27.bin-969641.mat"; % FCU log filepath [*.mat] COMPILE from *.bin using Mision Planner
+clc; clear all;
 [f, p]            = uigetfile('*.mat', 'Select FCU log MAT file');
 utc_offset        = -6;  % Timezone offset from UTC to local (-6=CST)
 gcs_location      = [34.72714, -86.55389, 247]; % LLA of GCS location (Altitude = m HAE)
-export_true       = 1;  % Set to 1 to export CSV files
+export_true       = 0;  % Set to 1 to export CSV files
 
 fcu_gps_output_filename   = [p "fcu_gps_data.csv"];  %CSV Export filenames
 fcu_tm_output_filename    = [p "fcu_tm_metrics.csv"];
 fcu_rc_output_filename    = [p "fcu_rc_metrics.csv"];
 
+%% SCRIPT
 disp("Importing FCU log");  % Import FCU log
-fcu_log_path = [p f]
+fcu_log_path = [p f];
 load(fcu_log_path);
-disp("Parsing log data...");
+disp("Parsing GPS data...");
 
 % Parse FCU GPS log data
+gps_dt            = GPS_1(:,2)/1e6; % Get delta t from power up [s]
 gps_ms            = GPS_1(:,5);   % Get GPS clock milliseconds
 gps_wk            = GPS_1(:,6);   % Get GPS clock weekday
 gps_lat           = GPS_1(:,9);   % GPS latitude [deg N WGS84]
@@ -35,45 +39,57 @@ for i = 1:length(gps_lat)
   % Calculate distance from GCS
   [d, ~]        = latLong2DistBear(gcs_location(1),gcs_location(2),...
                     gps_lat(i),gps_lon(i),"km");
-  dh = gps_alt(i) - gcs_location(3);  % Altitude delta [m]
-  range(i,1) = sqrt(d^2 + (dh/1000)^2);  % 3D range [km]
+  dh            = gps_alt(i) - gcs_location(3);   % Altitude delta [m]
+  range(i,1)    = sqrt(d^2 + (dh/1000)^2);        % 3D range [km]
 end
+N_gps             = length(gps_time); % Get GPS number of samples
 
 % Calculate log time start
-log_start_time    = gps2local(gps_wk(1), gps_ms(1), utc_offset, 0); % Local time stamp for log start
-dt_boot_log       = GPS_1(1,2)/10e6; % Time between power up and log start [s]
+disp("Calculating time sync...");
+log_start_time    = gps2local(gps_wk(1), gps_ms(1), utc_offset, 0);       % Local time stamp for log start
+dt_boot_log       = GPS_1(1,2)/10e6;                                      % Time between power up and log start [s]
 powerup_time      = gps2local(gps_wk(1), gps_ms(1), utc_offset, -dt_boot_log);
 fprintf("Power up time: %s\n", powerup_time);
 fprintf("FCU Log start time: %s\n", log_start_time);
 
 % Parse FCU telemetry metrics
-tm_dt             = RAD(:,2)/10e6;  % Get delta t from power up [s]
-tm_rssi_local     = RAD(:,3);  % Get local TM radio RSSI
-tm_rssi_remote    = RAD(:,4);  % Get remote TM radio RSSI
-tm_noise_local    = RAD(:,6);  % Get local TM noise floor
-tm_noise_remote   = RAD(:,7);  % Get remote TM noise floor
-tm_rx_err         = RAD(:,8);  % Get number of dropped TM packets
+disp("Parsing TM data...");
+tm_dt             = RAD(:,2)/1e6;  % Get delta t from power up [s]
+N_tm              = length(tm_dt);  % Get number of TM samples
+for i = 1:N_tm
+  tm_time{i}      = adjust_datetime(powerup_time, tm_dt(i));  % Generate TM time vector
+end
+tm_rssi_local     = RAD(:,3);       % Get local TM radio RSSI
+tm_rssi_remote    = RAD(:,4);       % Get remote TM radio RSSI
+tm_noise_local    = RAD(:,6);       % Get local TM noise floor
+tm_noise_remote   = RAD(:,7);       % Get remote TM noise floor
+tm_rx_err         = RAD(:,8);       % Get number of dropped TM packets
 
 % Parse FCU RC metrics
-rc_dt             = RSSI(:,2)/10e6; % Get delta t from power up [s]
-rc_rssi           = RSSI(:,3);    % Get C2 link RSSI
-rc_lq             = RSSI(:,4);    % Get C2 link quality
+disp("Parsing RC data...");
+rc_dt             = RSSI(:,2)/1e6; % Get delta t from power up [s]
+N_rc              = length(rc_dt);  % Get number of RC samples
+for i = 1:N_rc
+  rc_time{i}      = adjust_datetime(powerup_time, rc_dt(i));  % Generate RC time vector
+end
+rc_rssi           = RSSI(:,3);      % Get C2 link RSSI
+rc_lq             = RSSI(:,4);      % Get C2 link quality
 
 % DEBUG
-fprintf("GPS data length = %d\n", length(gps_time))
-fprintf("Telem data length = %d\n", length(tm_dt))
-fprintf("RC data length = %d\n", length(rc_dt))
+%fprintf("GPS data length = %d\n", N_gps)
+%fprintf("Telem data length = %d\n", N_tm)
+%fprintf("RC data length = %d\n", N_rc)
 
-%% EXPORT DATA
+%% EXPORT DATA                % NOTE: these could probably be a function but I'm in a hurry
 if export_true == 1
   disp("Exporting parsed FCU GPS data...");
   % Write FCU GPS data
-  headers   = {"GPS Time [CST]", "Latitude [deg N]", "Longitude [deg E]", "Range [km]"};
+  headers   = {"GPS Time [s]", "GPS Time [CST]", "Latitude [deg N]", "Longitude [deg E]", "Range [km]"};
   fid       = fopen(fcu_gps_output_filename, "w");
-  fprintf(fid, "%s,%s,%s,%s\n", headers{:});
+  fprintf(fid, "%s,%s,%s,%s,%s\n", headers{:});
   for i = 1:length(gps_time)
-    fprintf(fid, "%s,%.8f,%.8f,%.8f\n", ...
-    gps_time(i,:), gps_lat(i), gps_lon(i), range(i));
+    fprintf(fid, "%.8f,%s,%.8f,%.8f,%.8f\n", ...
+    gps_dt(i), gps_time(i,:), gps_lat(i), gps_lon(i), range(i));
   end
   fclose(fid);
   disp("Export complete");
