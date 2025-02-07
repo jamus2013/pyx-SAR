@@ -18,7 +18,7 @@ gcs_location      = [34.72714, -86.55389, 247]; % LLA of GCS location (Altitude 
 export_true       = 0;  % Set to 1 to export CSV files
 plot_true         = 1;  % Set to 1 to plot data
 
-if ~exist("f")
+if ~exist("f","var")
   [f, p]            = uigetfile('*.mat', 'Select FCU log MAT file');
   fcu_gps_output_filename   = [p "fcu_gps_data.csv"];  %CSV Export filenames
   fcu_tm_output_filename    = [p "fcu_tm_metrics.csv"];
@@ -26,7 +26,7 @@ if ~exist("f")
 end
 
 %% SCRIPT
-if ~exist("range")
+if ~exist("range","var")
   disp("Importing FCU log");  % Import FCU log
   fcu_log_path = [p f];
   load(fcu_log_path);
@@ -169,6 +169,26 @@ if plot_true == 1
   ylabel('Lost Packets');
   grid on;
 end
+
+
+%{
+% CLEAN UP
+headers   = {"Interp. Range [km]", "RC RSSI [%]", "RC LQ [%]"};
+fid       = fopen("fig1.csv", "w");
+fprintf(fid, "%s,%s,%s\n", headers{:});
+for i = 1:length(range_interp)
+  fprintf(fid, "%.8f,%.8f,%.8f\n",range_interp(i), rc_rssi(i), rc_lq(i));
+end
+fclose(fid);
+
+headers   = {"Range [km]", "TM RSSI Local [%]", "TM RSSI Remote [%]", "TM Noise Local", "TM Noise Remote", "TM Lost Packets"};
+fid       = fopen("fig2.csv", "w");
+fprintf(fid, "%s,%s,%s,%s,%s,%s\n", headers{:});
+for i = 1:length(range_sparse)
+  fprintf(fid, "%.8f,%.8f,%.8f,%.8f,%.8f,%d\n",range_sparse(i), tm_rssi_local(i), tm_rssi_remote(i), tm_noise_local(i), tm_noise_remote(i), tm_rx_err(i));
+end
+fclose(fid);
+%}
 
 % NOTES
 % signal_dBm = (RSSI / 1.9) - 127 % For original SiK radios
