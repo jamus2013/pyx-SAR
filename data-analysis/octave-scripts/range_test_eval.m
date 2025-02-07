@@ -7,15 +7,18 @@
 %   4. Update timezone ("utc_offset")
 %   5. Insert LLA of stationary GCS
 %   6. Set export flag to 1 if ready to generate output *csv's
-%   7. Run this script and import *.mat file
+%   7. Set plot flag to 1 to draw figures
+%   8. Run this script and import *.mat file
 
 % User variables
 %fcu_log_path      = "2025-02-05 16-33-27.bin-969641.mat"; % FCU log filepath [*.mat] COMPILE from *.bin using Mision Planner
-clc; clear all;
+clc;
+clear all;
 [f, p]            = uigetfile('*.mat', 'Select FCU log MAT file');
 utc_offset        = -6;  % Timezone offset from UTC to local (-6=CST)
 gcs_location      = [34.72714, -86.55389, 247]; % LLA of GCS location (Altitude = m HAE)
 export_true       = 0;  % Set to 1 to export CSV files
+plot_true         = 1;  % Set to 1 to plot data
 
 fcu_gps_output_filename   = [p "fcu_gps_data.csv"];  %CSV Export filenames
 fcu_tm_output_filename    = [p "fcu_tm_metrics.csv"];
@@ -75,10 +78,6 @@ end
 rc_rssi           = RSSI(:,3);      % Get C2 link RSSI
 rc_lq             = RSSI(:,4);      % Get C2 link quality
 
-% DEBUG
-%fprintf("GPS data length = %d\n", N_gps)
-%fprintf("Telem data length = %d\n", N_tm)
-%fprintf("RC data length = %d\n", N_rc)
 
 %% EXPORT DATA                % NOTE: these could probably be a function but I'm in a hurry
 if export_true == 1
@@ -119,5 +118,25 @@ if export_true == 1
   fclose(fid);
   disp("Export complete");
 end
+
+%% PLOT DATA
+if plot_true == 1
+  disp("Plotting data...");
+  % RC RSSI vs Interpolated Range
+  range_interp = interp1(gps_dt, range, rc_dt, 'linear', 'extrap'); % 'linear' interpolation
+  figure
+  p1 = subplot(2,1,1);
+  plot(range_interp, rc_rssi,'.');
+  title('RC datalink Quality');
+  xlabel('Range [km]');
+  ylabel('RC RSSI [%]');
+  grid on;
+  p2 = subplot(2,1,2);
+  plot(range_interp, rc_lq/100,'.');
+  xlabel('Range [km]');
+  ylabel('RC Link Quality [%]');
+  grid on;
+end
+
 
 
