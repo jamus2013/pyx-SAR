@@ -5,16 +5,17 @@
 %   2. Download DataFlash Log (*.bin) using GCS software (or pull from FCU MicroSD card)
 %   3. Generate *.mat file from *.bin using Mission Planner
 %   4. Update timezone ("utc_offset")
-%   5. Insert LLA of stationary GCS
-%   6. Set export flag to 1 if ready to generate output *csv's
+%   5. Set export flag to 1 if ready to generate output *csv's
 %   7. Set plot flag to 1 to draw figures
-%   8. Run this script and import *.mat file
+%   7. Run this script and import *.mat file
+%   8. Insert LLA of stationary GCS [don't forget the square braces!]
 
 % User variables
 %fcu_log_path      = "2025-02-05 16-33-27.bin-969641.mat"; % FCU log filepath [*.mat] COMPILE from *.bin using Mision Planner
 clc; close all;
 utc_offset        = -6;  % Timezone offset from UTC to local (-6=CST)
-gcs_location      = [34.72714, -86.55389, 247]; % LLA of GCS location (Altitude = m HAE)
+%gcs_location      = [34.72714, -86.55389, 247]; % LLA of GCS location (Altitude = m HAE)
+gcs_location      = input('GCS Location [lat, long, alt]: ');  % User inputs LLA as array
 export_true       = 0;  % Set to 1 to export CSV files
 plot_true         = 1;  % Set to 1 to plot data
 
